@@ -1,16 +1,15 @@
+# gui.py
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QLabel, QWidget, QToolBar
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QSize
-import logic
-from excepciones import IdiomaNoSoportadoError, ModeloNoEncontradoError  # Remove the dot prefix
+from logic import dividir_archivo, count_tokens
 
 class AplicacionGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
         self.tema_actual = "light"
-        self.language = "english"
 
     def initUI(self):
         self.setGeometry(100, 100, 400, 300)
@@ -33,7 +32,6 @@ class AplicacionGUI(QMainWindow):
         layout_principal = QVBoxLayout()
         central_widget.setLayout(layout_principal)
 
-        # Botón para seleccionar archivo
         layout_archivo = QHBoxLayout()
         boton_seleccionar = QPushButton("Seleccionar archivo")
         boton_seleccionar.clicked.connect(self.seleccionar_archivo)
@@ -42,18 +40,17 @@ class AplicacionGUI(QMainWindow):
         layout_archivo.addWidget(self.etiqueta_archivo)
         layout_principal.addLayout(layout_archivo)
 
+        # Button for dividing the file
+        boton_dividir = QPushButton("Dividir archivo")
+        boton_dividir.clicked.connect(self.dividir_texto)
+        layout_principal.addWidget(boton_dividir)
 
-        # Botones de acción
-        layout_acciones = QHBoxLayout()
+        # Button for counting tokens
         boton_contar = QPushButton("Contar tokens")
         boton_contar.clicked.connect(self.contar_tokens)
-        boton_dividir = QPushButton("Dividir texto")
-        boton_dividir.clicked.connect(self.dividir_texto)
-        layout_acciones.addWidget(boton_contar)
-        layout_acciones.addWidget(boton_dividir)
-        layout_principal.addLayout(layout_acciones)
+        layout_principal.addWidget(boton_contar)
 
-        # Etiqueta de tokens
+        # Label for token count output
         self.etiqueta_tokens = QLabel("Tokens: ")
         layout_principal.addWidget(self.etiqueta_tokens)
 
@@ -61,36 +58,21 @@ class AplicacionGUI(QMainWindow):
         archivo, _ = QFileDialog.getOpenFileName(self, "Seleccionar archivo", "", "Archivos de Texto (*.txt)")
         if archivo:
             self.etiqueta_archivo.setText(archivo.split('/')[-1])
-            with open(archivo, 'r', encoding='utf-8') as f:
-                self.text_content = f.read()
-
-    def detectar_idioma(self):
-        try:
-            token_count, _ = logic.count_tokens(self.text_content, "spanish")
-            self.language = "spanish"
-        except IdiomaNoSoportadoError:
-            try:
-                token_count, _ = logic.count_tokens(self.text_content, "english")
-                self.language = "english"
-            except IdiomaNoSoportadoError:
-                self.etiqueta_tokens.setText("Idioma no soportado")
-
-    def contar_tokens(self):
-        try:
-            token_count, _ = logic.count_tokens(self.text_content, self.language)
-            self.etiqueta_tokens.setText(f"Tokens: {token_count}")
-        except (IdiomaNoSoportadoError, AttributeError):
-            self.etiqueta_tokens.setText("Selecciona un archivo e idioma válidos.")
+            self.archivo = archivo
 
     def dividir_texto(self):
-        try:
-            partes = logic.divide_text(self.text_content, 7500, self.language)
-            for i, parte in enumerate(partes):
-                with open(f"output_parte_{i+1}.txt", "w", encoding="utf-8") as f:
-                    f.write(parte)
-            self.etiqueta_tokens.setText("Texto dividido y guardado.")
-        except (IdiomaNoSoportadoError, AttributeError):
-            self.etiqueta_tokens.setText("Selecciona un archivo e idioma válidos.")
+        if hasattr(self, 'archivo'):
+            dividir_archivo(self.archivo)
+            self.etiqueta_tokens.setText("Archivo dividido exitosamente.")
+        else:
+            self.etiqueta_tokens.setText("Selecciona un archivo para dividir.")
+
+    def contar_tokens(self):
+        if hasattr(self, 'archivo'):
+            num_tokens = count_tokens(self.archivo)
+            self.etiqueta_tokens.setText(f"Tokens: {num_tokens}")
+        else:
+            self.etiqueta_tokens.setText("Selecciona un archivo para contar los tokens.")
 
     def cambiar_tema(self):
         if self.tema_actual == "light":
