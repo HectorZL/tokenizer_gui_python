@@ -25,7 +25,6 @@ def count_tokens(archivo):
 
 def dividir_archivo(archivo, tokens_por_archivo=512, tokens_por_grupo=7500):
     """Splits the file into smaller files with a specified number of tokens per file."""
-    # Load and tokenize the text
     with open(archivo, 'r', encoding='utf-8') as f:
         texto = f.read()
     tokens = tokenizer.tokenize(texto)
